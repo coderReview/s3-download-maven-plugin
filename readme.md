@@ -9,10 +9,14 @@ Configuration parameters
 |-----------|-------------|----------|---------|
 |bucketName|The name of the bucket|*yes*| |
 |source|The source amazon s3 file key. Empty to download the whole bucket.|*no*| |
+|relative|If source a directory, use relative from directory. Default is false.|*no*| |
 |destination|The destination file or destination folder. Directories *MUST* end with */*| *yes*| |
 |accessKey|S3 access key | *yes* | if unspecified, uses the Default Provider, falling back to env variables |
 |secretKey|S3 secret key | *yes* | if unspecified, uses the Default Provider, falling back to env variables |
 |endpoint|Use a different s3 endpoint| *no* | s3.amazonaws.com |
+
+
+s3-download.relative
 
 Example: Download a bucket
 ----------------------

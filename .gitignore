@@ -6,7 +6,9 @@ test-output
 *.ipr
 *.iws
 *.class
-
+.classpath
+.project
+.settings
 # Package Files #
 *.jar
 *.war

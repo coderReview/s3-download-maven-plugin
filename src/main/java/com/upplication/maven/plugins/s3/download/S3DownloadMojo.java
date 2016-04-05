@@ -40,6 +40,13 @@ public class S3DownloadMojo extends AbstractMojo {
     private String source;
 
     /**
+     * If source is directory then copy into destination relative
+     * to the source (do not recreate the S3 full key under destination)
+     */
+    @Parameter(property = "s3-download.relative")
+    private boolean relative = false;
+
+    /**
      * The bucket to download from.
      */
     @Parameter(property = "s3-download.bucketName", required = true)
@@ -60,7 +67,7 @@ public class S3DownloadMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
         getLog().info("--- s3-download-maven-plugin");
-        getLog().info(String.format("Bucket: %s, source: %s, destination: %s\n", bucketName, source, destination));
+        getLog().info(String.format("Bucket: %s, source: %s, destination: %s relative:\n", bucketName, source, destination, relative));
         
         if (source == null) {
             source = "";
@@ -147,6 +154,14 @@ public class S3DownloadMojo extends AbstractMojo {
             downloadSingleFile(s3, destinationFile, source);
         }
     }
+    
+    private String getRelativeFromKey(String key) {
+    	if (relative && key.length() > source.length()) {
+    		return key.substring(source.length());
+    	}
+    	// return original otherwise
+    	return key;
+    }
 
     /**
      * Download a single file. If the key is a directory it will only create the directory on your filesystem.
@@ -157,7 +172,9 @@ public class S3DownloadMojo extends AbstractMojo {
      * @throws IOException
      */
     private void downloadSingleFile(AmazonS3 s3, File destination, String key) throws IOException {
-        File newDestination = destination.toPath().resolve(key).toFile();
+        getLog().info(String.format("Downloading %s:\n", key));
+
+        File newDestination = destination.toPath().resolve(getRelativeFromKey(key)).toFile();
 
         if (isDirectory(key)) {
             newDestination.mkdirs();

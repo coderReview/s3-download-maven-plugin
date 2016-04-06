@@ -172,7 +172,7 @@ public class S3DownloadMojo extends AbstractMojo {
      * @throws IOException
      */
     private void downloadSingleFile(AmazonS3 s3, File destination, String key) throws IOException {
-        getLog().info(String.format("Downloading %s:\n", key));
+        getLog().debug(String.format("Downloading %s", key));
 
         File newDestination = destination.toPath().resolve(getRelativeFromKey(key)).toFile();
 

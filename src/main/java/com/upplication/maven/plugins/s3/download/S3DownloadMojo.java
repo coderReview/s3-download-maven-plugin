@@ -12,12 +12,14 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.codehaus.plexus.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
+// this defines the goal
 @Mojo(name = "s3-download")
 public class S3DownloadMojo extends AbstractMojo {
 
@@ -45,6 +47,14 @@ public class S3DownloadMojo extends AbstractMojo {
      */
     @Parameter(property = "s3-download.relative")
     private boolean relative = false;
+
+    /**
+     * Optional if provided, exclude files with key after final delimiter matching
+     * this pattern
+     * xxx/yyy/zzz/test.mdl is excluded if string is ".mdl"
+     */
+    @Parameter(property = "s3-download.exclude")
+    private String exclude = null;
 
     /**
      * The bucket to download from.
@@ -173,20 +183,34 @@ public class S3DownloadMojo extends AbstractMojo {
      */
     private void downloadSingleFile(AmazonS3 s3, File destination, String key) throws IOException {
         getLog().debug(String.format("Downloading %s", key));
+        if (!isExclude(key)) {
+            File newDestination = destination.toPath().resolve(getRelativeFromKey(key)).toFile();
 
-        File newDestination = destination.toPath().resolve(getRelativeFromKey(key)).toFile();
+            if (isDirectory(key)) {
+                newDestination.mkdirs();
+            } else {
+                newDestination.getParentFile().mkdirs();
 
-        if (isDirectory(key)) {
-            newDestination.mkdirs();
+                GetObjectRequest request = new GetObjectRequest(bucketName, key);
+                S3Object object = s3.getObject(request);
+                S3ObjectInputStream objectContent = object.getObjectContent();
+
+                Files.copy(objectContent, newDestination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
         } else {
-            newDestination.getParentFile().mkdirs();
-
-            GetObjectRequest request = new GetObjectRequest(bucketName, key);
-            S3Object object = s3.getObject(request);
-            S3ObjectInputStream objectContent = object.getObjectContent();
-
-            Files.copy(objectContent, newDestination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            getLog().debug(String.format("Excluding %s", key));
         }
+    }
+    
+    protected void setExclude(String excluded) {
+    	this.exclude = excluded;
+    }
+    protected boolean isExclude(String key) {
+    	getLog().debug(String.format("isExclude() key:%s  exclude:%s", key, exclude));
+    	if (!StringUtils.isBlank(exclude) && !StringUtils.isBlank(key) && key.length() > exclude.length()) {
+    		return (StringUtils.substring(key, key.length()-exclude.length()).equals(exclude));
+    	}
+    	return false;
     }
 
 }
